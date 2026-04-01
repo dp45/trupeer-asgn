@@ -27,8 +27,6 @@ export default function VideoPlayer({
   const [borderRadius, setBorderRadius] = useState(8);
   const [skippedRanges, setSkippedRanges] = useState<SkippedRange[]>([]);
 
-  // Only expose non-spacing words to the transcript for highlighting;
-  // keep original array for indexing alignment
   const words: Word[] = transcript.words;
 
   const togglePlay = useCallback(() => {
@@ -50,10 +48,7 @@ export default function VideoPlayer({
 
   const handleSkip = useCallback((range: SkippedRange) => {
     setSkippedRanges((prev) => {
-      // Merge overlapping ranges
-      const merged = [...prev, range].sort(
-        (a, b) => a.startTime - b.startTime
-      );
+      const merged = [...prev, range].sort((a, b) => a.startTime - b.startTime);
       const result: SkippedRange[] = [];
       for (const r of merged) {
         if (result.length && r.startTime <= result[result.length - 1].endTime) {
@@ -78,7 +73,6 @@ export default function VideoPlayer({
     );
   }, []);
 
-  // Sync isPlaying state when video ends
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -89,8 +83,8 @@ export default function VideoPlayer({
 
   return (
     <div className="flex h-full w-full overflow-hidden rounded-2xl bg-[#e8e8ee] shadow-2xl">
-      {/* LEFT — Transcript + controls */}
-      <aside className="flex flex-col w-80 min-w-[240px] shrink-0 border-r border-white/8 p-5 overflow-hidden">
+      {/* LEFT — Transcript + style controls */}
+      <aside className="flex flex-col w-80 min-w-[240px] shrink-0 border-r border-black/8 p-5 overflow-hidden bg-white">
         <div className="flex-1 overflow-hidden">
           <Transcript
             words={words}
@@ -102,41 +96,46 @@ export default function VideoPlayer({
           />
         </div>
 
-        <div className="mt-4 space-y-4 border-t border-white/8 pt-4">
+        <div className="mt-4 space-y-4 border-t border-black/8 pt-4">
           <StyleControls
             padding={padding}
             borderRadius={borderRadius}
             onPaddingChange={setPadding}
             onBorderRadiusChange={setBorderRadius}
           />
-          <PlaybackControls
-            videoRef={videoRef}
-            isPlaying={isPlaying}
-            onTogglePlay={togglePlay}
-          />
         </div>
       </aside>
 
-      {/* RIGHT — Three.js canvas */}
-      <main className="flex-1 relative overflow-hidden" ref={containerRef}>
-        {/* Hidden video element — Three.js reads from it */}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          src={videoSrc}
-          playsInline
-          preload="auto"
-          crossOrigin="anonymous"
-          className="absolute opacity-0 pointer-events-none w-px h-px"
-        />
-        <ThreeCanvas
+      {/* RIGHT — Canvas + Playback Controls stacked */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Three.js canvas */}
+        <main className="flex-1 relative overflow-hidden" ref={containerRef}>
+          {/* Hidden video element — Three.js reads from it */}
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            playsInline
+            preload="auto"
+            crossOrigin="anonymous"
+            className="absolute opacity-0 pointer-events-none w-px h-px"
+          />
+          <ThreeCanvas
+            videoRef={videoRef}
+            backgroundSrc={backgroundSrc}
+            padding={padding}
+            borderRadius={borderRadius}
+            containerRef={containerRef}
+          />
+        </main>
+
+        {/* Playback controls — sits below the canvas */}
+        <PlaybackControls
           videoRef={videoRef}
-          backgroundSrc={backgroundSrc}
-          padding={padding}
-          borderRadius={borderRadius}
-          containerRef={containerRef}
+          isPlaying={isPlaying}
+          onTogglePlay={togglePlay}
         />
-      </main>
+      </div>
     </div>
   );
 }
